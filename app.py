@@ -17,9 +17,7 @@ This app helps you reorder students' total time data based on your original emai
 example
 
 ahmad@gmail.com 
-
 ali@gmail.com
-
 ... and so on
 
 Once uploaded, you'll get a downloadable Excel file with the reordered time data.
