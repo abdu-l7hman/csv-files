@@ -11,11 +11,13 @@ Welcome, Teacher! 👩‍🏫👨‍🏫
 This app helps you reorder students' total time data based on your original email list.
 
 ### 📥 What to upload:
-1. **Excel or CSV file**: This file must contain two columns:
-   - `Username`: The student email addresses
-   - `Total time`: The time each student spent
+1. **Excel or CSV file**: This file is the file generated after every day
 
 2. **Text file (.txt)**: A list of student emails (one per line), in the order you'd like to display them.
+example
+ahmad@gmail.com
+ali@gmail.com
+and so on.......
 
 Once uploaded, you'll get a downloadable Excel file with the reordered time data.
 """)
