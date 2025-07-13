@@ -15,9 +15,12 @@ This app helps you reorder students' total time data based on your original emai
 
 2. **Text file (.txt)**: A list of student emails (one per line), in the order you'd like to display them.
 example
-ahmad@gmail.com
+
+ahmad@gmail.com 
+
 ali@gmail.com
-and so on.......
+
+... and so on
 
 Once uploaded, you'll get a downloadable Excel file with the reordered time data.
 """)
