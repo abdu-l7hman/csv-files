@@ -13,12 +13,14 @@ This app helps you reorder students' total time based on your original email lis
 ### 📥 Upload Instructions:
 1. **CSV file** (daily report):  
    Must contain `Username` and `Total time` columns.  
-   ✅ **Keep the header**  
-   ❌ **Skip the second row only** (teacher name)
-2. **Excel file (.xlsx)**:  
-   Contains the original email list in **column B** (second column).
+   ✅ Keep the header  
+   ❌ Skip the **second row only** (teacher name)
 
-⬇️ You'll get a downloadable Excel file with the time reordered based on your original list.
+2. **Excel file (.xlsx)**:  
+   Contains the original email list in **column B**.  
+   All columns and rows will be preserved in the final output.
+
+⬇️ You’ll get a downloadable Excel file with a new `Reordered Total Time` column.
 """)
 
 # Uploads
@@ -29,7 +31,7 @@ if uploaded_daily_csv and uploaded_original_excel:
     try:
         # Read CSV and skip only the second row (row index 1)
         all_lines = uploaded_daily_csv.read().decode("utf-8").splitlines()
-        cleaned_lines = [line for idx, line in enumerate(all_lines) if idx != 1]  # keep everything except line 2
+        cleaned_lines = [line for idx, line in enumerate(all_lines) if idx != 1]
         df_daily = pd.read_csv(io.StringIO("\n".join(cleaned_lines)))
 
         # Check for required columns
@@ -40,35 +42,29 @@ if uploaded_daily_csv and uploaded_original_excel:
         # Read Excel file
         df_original = pd.read_excel(uploaded_original_excel)
 
+        # Extract emails from column B (index 1)
         if df_original.shape[1] < 2:
-            st.error("Excel file must have at least 2 columns. Emails must be in column B.")
+            st.error("Excel file must have at least two columns. Emails must be in column B.")
             st.stop()
 
-        # Extract email list from column B
-        original_emails = df_original.iloc[:, 1].dropna().astype(str).str.strip().tolist()
-
-        # Extract usernames and times from daily file
+        original_emails = df_original.iloc[:, 1].astype(str).str.strip().tolist()
         usernames = df_daily['Username'].astype(str).str.strip().tolist()
         total_times = df_daily['Total time'].astype(str).tolist()
+
+        # Build mapping of username to time
         time_map = dict(zip(usernames, total_times))
 
-        # Reorder based on original list
-        reordered_times = [time_map.get(email, "00:00:00") for email in original_emails]
+        # Add 'Reordered Total Time' column to original DataFrame
+        df_original['Reordered Total Time'] = [time_map.get(email, "00:00:00") for email in original_emails]
 
-        # Create final DataFrame
-        df_output = pd.DataFrame({
-            'Username': original_emails,
-            'Reordered Total Time': reordered_times
-        })
-
-        # Save to Excel
+        # Export to Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_output.to_excel(writer, index=False)
+            df_original.to_excel(writer, index=False)
         output.seek(0)
 
-        # Download button
-        st.success("✅ Processing complete! Download your reordered file below.")
+        # Provide download button
+        st.success("✅ File ready! Download below:")
         st.download_button(
             label="⬇️ Download Reordered Excel File",
             data=output.getvalue(),
