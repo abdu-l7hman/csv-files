@@ -8,69 +8,62 @@ st.title("📊 Student Time Reordering App")
 
 st.markdown("""
 Welcome, Teacher! 👩‍🏫👨‍🏫  
-This app helps you reorder students' total time based on your original email list.
+This app helps you reorder students' total time data based on your original email list.
 
-### 📥 Upload Instructions:
-1. **CSV file** (daily report):  
-   Must contain `Username` and `Total time` columns.  
-   ✅ Keep the header  
-   ❌ Skip the **second row only** (teacher name)
+### 📥 What to upload:
+1. **Excel or CSV file**: This file is the file generated after every day
 
-2. **Excel file (.xlsx)**:  
-   Contains the original email list in **column B**.  
-   All columns and rows will be preserved in the final output.
+2. **Text file (.txt)**: A list of student emails (one per line), in the order of the original file.
 
-⬇️ You’ll get a downloadable Excel file with a new `Reordered Total Time` column.
+Once uploaded, you'll get a downloadable Excel file with the reordered time data.
 """)
 
-# Uploads
-uploaded_daily_csv = st.file_uploader("Step 1: Upload Daily CSV File", type=["csv"])
-uploaded_original_excel = st.file_uploader("Step 2: Upload Original Email List Excel File (.xlsx)", type=["xlsx"])
+uploaded_excel = st.file_uploader("Step 1: Upload Excel or CSV File", type=['csv', 'xlsx'])
+uploaded_txt = st.file_uploader("Step 2: Upload Text File with Original Email Order", type=['txt'])
 
-if uploaded_daily_csv and uploaded_original_excel:
+if uploaded_excel and uploaded_txt:
     try:
-        # Read CSV and skip only the second row (row index 1)
-        all_lines = uploaded_daily_csv.read().decode("utf-8").splitlines()
-        cleaned_lines = [line for idx, line in enumerate(all_lines) if idx != 1]
-        df_daily = pd.read_csv(io.StringIO("\n".join(cleaned_lines)))
+        # Read Excel or CSV file
+        if uploaded_excel.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_excel)
+        else:
+            df = pd.read_excel(uploaded_excel)
 
-        # Check for required columns
-        if 'Username' not in df_daily.columns or 'Total time' not in df_daily.columns:
-            st.error("CSV file must contain 'Username' and 'Total time' columns.")
+        if 'Username' not in df.columns or 'Total time' not in df.columns:
+            st.error("The uploaded file must contain 'Username' and 'Total time' columns.")
             st.stop()
 
-        # Read Excel file
-        df_original = pd.read_excel(uploaded_original_excel)
+        email_list = df['Username'].tolist()
+        total_time = df['Total time'].tolist()
 
-        # Extract emails from column B (index 1)
-        if df_original.shape[1] < 2:
-            st.error("Excel file must have at least two columns. Emails must be in column B.")
-            st.stop()
+        # Read original email list
+        original_list = [line.strip().decode('utf-8') for line in uploaded_txt.readlines()]
 
-        original_emails = df_original.iloc[:, 1].astype(str).str.strip().tolist()
-        usernames = df_daily['Username'].astype(str).str.strip().tolist()
-        total_times = df_daily['Total time'].astype(str).tolist()
+        if len(email_list) != len(total_time):
+            st.warning("⚠️ Note: The number of emails and total time entries do not match.")
 
-        # Build mapping of username to time
-        time_map = dict(zip(usernames, total_times))
+        combined_dict = dict(zip(email_list, total_time))
+        reordered_total_time = [combined_dict.get(username, "00:00:00") for username in original_list]
 
-        # Add 'Reordered Total Time' column to original DataFrame
-        df_original['Reordered Total Time'] = [time_map.get(email, "00:00:00") for email in original_emails]
+        df_output = pd.DataFrame({
+            'Username': original_list,
+            'Reordered Total Time': reordered_total_time
+        })
 
-        # Export to Excel
+        # Convert to downloadable Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_original.to_excel(writer, index=False)
+            df_output.to_excel(writer, index=False)
         output.seek(0)
 
-        # Provide download button
-        st.success("✅ File ready! Download below:")
+        st.success("✅ File processed successfully! Click below to download:")
+
         st.download_button(
             label="⬇️ Download Reordered Excel File",
             data=output.getvalue(),
-            file_name="reordered_time_data.xlsx",
+            file_name="output_with_time.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
     except Exception as e:
-        st.error(f"❌ An error occurred: {e}")
+        st.error(f"❌ Error: {str(e)}")
